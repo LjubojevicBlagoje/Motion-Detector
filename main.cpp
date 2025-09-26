@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  // ACCESS img to access img[x][y] pixel's RGB values
+  // ACCESS img to access img[y][x] pixel's RGB values
 
   stbi_image_free(data);
 
