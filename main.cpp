@@ -52,16 +52,22 @@ int main(int argc, char** argv) {
     }
   }
 
-  // ACCESS img to access img[x][y] pixel's RGB values 
+  // ACCESS img to access img[x][y] pixel's RGB values
 
   stbi_image_free(data);
 
   // GPT5 END ---------------------------------------------------------------|
 
+  // TODO: Convert to greyscale - Integer BT.601 algorithm
+    // Use a greyscale buffer
 
+  // TODO: Apply Gaussian blur
+    // Use a blur buffer from greyscale
+
+  // Export preprocessed img as a jpg
 
   delete[] img;
   delete[] block;
-  
+
   return 0;
 }
