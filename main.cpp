@@ -1,14 +1,20 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #pragma clang diagnostic push
-#include "stb_image.h"
 #pragma clang diagnostic ignored "-Wunused-parameter"
+#include "stb_image.h"
+#pragma clang diagnostic pop
+
+
+#include <stdlib.h>
 
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <new>
+#include "stb_image_write.h"
 
 #include "classes.h"
 #include "functions.h"
@@ -59,15 +65,36 @@ int main(int argc, char** argv) {
   // GPT5 END ---------------------------------------------------------------|
 
   // TODO: Convert to greyscale - Integer BT.601 algorithm
-    // Use a greyscale buffer
+  // Use a greyscale buffer
+  // Use a blur buffer from greyscale
+  Pixel* block2 = new Pixel[(size_t)w * h];  // contiguous pixels
+  Pixel** greyscale = new Pixel*[h];         // row pointers
+  for (int y = 0; y < h; ++y) greyscale[y] = block2 + (size_t)y * w;
+
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b)/3;
+
+      greyscale[y][x].r = greyscaleVal;
+      greyscale[y][x].g = greyscaleVal;
+      greyscale[y][x].b = greyscaleVal;
+    }
+  }
+
+  // TEST EXPORT GREYSCALE AS JPG
+  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {
+    std::cerr << "Failed to write greyscale.jpg\n";
+  }
 
   // TODO: Apply Gaussian blur
-    // Use a blur buffer from greyscale
 
   // Export preprocessed img as a jpg
 
   delete[] img;
   delete[] block;
+  delete[] greyscale;
+  delete[] block2;
 
   return 0;
 }
+
