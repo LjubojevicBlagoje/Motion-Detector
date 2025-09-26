@@ -2,21 +2,27 @@
 #define STBI_ONLY_JPEG
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
+// Silence warnings from stb_image_write.h
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#include "stb_image_write.h"
+#pragma clang diagnostic pop
+
+// Silence warnings from stb_image.h
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #include "stb_image.h"
 #pragma clang diagnostic pop
 
-
-#include <stdlib.h>
-
+#include <cstdlib>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <new>
-#include "stb_image_write.h"
 
 #include "classes.h"
+
 
 int main(int argc, char** argv) {
   // GPT5 --------------------------------------------------------------------|
