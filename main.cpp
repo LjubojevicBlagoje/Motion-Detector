@@ -17,7 +17,6 @@
 #include "stb_image_write.h"
 
 #include "classes.h"
-#include "functions.h"
 
 int main(int argc, char** argv) {
   // GPT5 --------------------------------------------------------------------|
