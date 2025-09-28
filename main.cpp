@@ -15,22 +15,22 @@
 #include "stb_image.h"
 #pragma clang diagnostic pop
 
-#include <cstdlib>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <new>
 
 #include "classes.h"
-
+#include "classes.cpp"
 
 int main(int argc, char** argv) {
-  // GPT5 --------------------------------------------------------------------|
-
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << "input.jpg" << std::endl;
     return 1;
   }
+
+  // GPT5 --------------------------------------------------------------------|
 
   int w = 0, h = 0, n = 0;
   // Force 3 channels (RGB)
@@ -78,18 +78,18 @@ int main(int argc, char** argv) {
 
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
-      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b)/3;
+      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b) / 3;
 
-      greyscale[y][x].r = greyscaleVal;
-      greyscale[y][x].g = greyscaleVal;
-      greyscale[y][x].b = greyscaleVal;
+      // Make R, G, and B value for each pixel equal greyscaleVal
+      greyscale[y][x].to_greyscale(greyscale, greyscaleVal);
     }
   }
 
-  // TEST EXPORT GREYSCALE AS JPG
+  // TEST EXPORT GREYSCALE AS JPG ----------------------------------
   if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {
     std::cerr << "Failed to write greyscale.jpg\n";
   }
+  // ---------------------------------------------------------------
 
   // TODO: Apply Gaussian blur
 
@@ -102,4 +102,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
