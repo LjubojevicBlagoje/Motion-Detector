@@ -28,8 +28,8 @@
 #include "functions.h"
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " input.jpg" << std::endl;
+  if (argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " frame.jpg mask.jpg" << std::endl;
     return 1;
   }
 
@@ -42,42 +42,36 @@ int main(int argc, char** argv) {
     std::cerr << "stbi_load failed: " << stbi_failure_reason() << std::endl;
     return 2;
   }
-
   std::cout << "Loaded " << w << "x" << h << "RGB" << std::endl;
 
-  Pixel* block = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** img = new Pixel*[h];              // row pointers
-  for (int y = 0; y < h; ++y) img[y] = block + (size_t)y * w;
-
-  // fill from stb_image's RGB bytes
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      size_t l = ((size_t)y * w + x) * 3;  // byte index into data
-      img[y][x].r = data[l + 0];
-      img[y][x].g = data[l + 1];
-      img[y][x].b = data[l + 2];
-    }
+  unsigned char* maskData = stbi_load(argv[2], &w, &h, &n, 3);
+  if (!maskData) {
+    std::cerr << "stbi_load failed: " << stbi_failure_reason() << std::endl;
+    return 2;
   }
+  std::cout << "Loaded " << w << "x" << h << "RGB" << std::endl;
 
-  // ACCESS img to access img[y][x] pixel's RGB values
+  Pixel* block = new Pixel[(size_t)w * h];   // contiguous pixels
+  Pixel* mblock = new Pixel[(size_t)w * h];  // contiguous pixels
+
+  Pixel** img = makeImg(w, h, n, data, block);
+  Pixel** mask = makeImg(w, h, n, maskData, mblock);
+  // Use as img[y][x] to access pixel's RGB values
+
   stbi_image_free(data);
+  stbi_image_free(maskData);
 
   // GPT5 END ---------------------------------------------------------------|
 
   // CONVERT TO GREYSCALE ---------------------------------------------------|
-  Pixel* block2 = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** greyscale = new Pixel*[h];         // row pointers
-  for (int y = 0; y < h; ++y) greyscale[y] = block2 + (size_t)y * w;
+  Pixel* block2 = new Pixel[(size_t)w * h];   // contiguous pixels
+  Pixel* mblock2 = new Pixel[(size_t)w * h];  // contiguous pixels
 
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b) / 3;
+  // Apply greyscale to frame
+  Pixel** greyscale = applyGreyscale(w, h, n, img, block2);
+  // Apply greyscale to mask
+  Pixel** greyscaleMask = applyGreyscale(w, h, n, mask, mblock2);
 
-      // Make R, G, B, and dedicated greyscale value for each pixel in block2
-      // equal greyscaleVal
-      greyscale[y][x].to_greyscale(greyscale, greyscaleVal);
-    }
-  }
   // -----------------------------------------------------------------------|
 
   // TEST EXPORT GREYSCALE AS JPG ---------------------------------|
@@ -94,44 +88,43 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, buffer2, 90)) {
-    std::cerr << "Failed to write greyscale.jpg\n";
+  if (!stbi_write_jpg("greyscaleFRAME.jpg", w, h, 3, buffer2, 90)) {
+    std::cerr << "Failed to write greyscaleFRAME.jpg\n";
   }
 
   // Free buffer after writing
   delete[] buffer2;
+  // ---------------------------------------------------
+  uint8_t* buffer2mask = new uint8_t[(size_t)w * h * 3];
+
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      Pixel& p = greyscaleMask[y][x];  // or gaussian[y][x]
+      size_t idx = ((size_t)y * w + x) * 3;
+      buffer2mask[idx + 0] = p.r;
+      buffer2mask[idx + 1] = p.g;
+      buffer2mask[idx + 2] = p.b;
+    }
+  }
+
+  if (!stbi_write_jpg("greyscaleMASK.jpg", w, h, 3, buffer2mask, 90)) {
+    std::cerr << "Failed to write greyscaleMASK.jpg\n";
+  }
+
+  // Free buffer after writing
+  delete[] buffer2mask;
 
   // --------------------------------------------------------------|
 
   // GAUSSIAN BLUR ---------------------------------------------------------|
   Pixel* block3 = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** gaussian = new Pixel*[h];          // row pointers
-  for (int y = 0; y < h; ++y) gaussian[y] = block3 + (size_t)y * w;
+  Pixel* mblock3 = new Pixel[(size_t)w * h];
 
-  // Gaussian kernel
-  const double* gaussianKernel = getKernel();
+  // Apply gaussian blur to frame
+  Pixel** gaussian = applyGaussianBlur(w, h, n, greyscale, block3);
+  // Apply gaussian blur to mask
+  Pixel** gaussianMask = applyGaussianBlur(w, h, n, greyscaleMask, mblock3);
 
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      double sum = 0;
-
-      int kernelIndex = 0;
-
-      for (int gy = y - 4; gy < y + 5; gy++) {
-        for (int gx = x - 4; gx < x + 5; gx++) {
-          if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
-            sum += greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
-          }
-          kernelIndex++;
-        }
-      }
-      // Make R, G, B, and dedicated gaussian value for each pixel in block2
-      // equal gaussianVal;
-      uint8_t gaussianVal = static_cast<uint8_t>(std::round(sum));
-
-      gaussian[y][x].to_gaussian(gaussian, gaussianVal);
-    }
-  }
   // -----------------------------------------------------------------------|
 
   // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
@@ -148,21 +141,48 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (!stbi_write_jpg("gaussian.jpg", w, h, 3, buffer3, 90)) {
-    std::cerr << "Failed to write gaussian.jpg\n";
+  if (!stbi_write_jpg("gaussianFRAME.jpg", w, h, 3, buffer3, 90)) {
+    std::cerr << "Failed to write gaussianFRAME.jpg\n";
   }
 
   // Free buffer after writing
   delete[] buffer3;
+  // -----------------------------------------------------------------------|
 
+  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
+  // Allocate raw buffer for tightly packed RGB bytes
+  uint8_t* buffer3mask = new uint8_t[(size_t)w * h * 3];
+
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      Pixel& p = gaussianMask[y][x];  // or gaussian[y][x]
+      size_t idx = ((size_t)y * w + x) * 3;
+      buffer3mask[idx + 0] = p.r;
+      buffer3mask[idx + 1] = p.g;
+      buffer3mask[idx + 2] = p.b;
+    }
+  }
+
+  if (!stbi_write_jpg("gaussianMASK.jpg", w, h, 3, buffer3mask, 90)) {
+    std::cerr << "Failed to write gaussianMASK.jpg\n";
+  }
+
+  // Free buffer after writing
+  delete[] buffer3mask;
   // --------------------------------------------------------------|
 
   delete[] img;
   delete[] block;
+  delete[] mask;
+  delete[] mblock;
   delete[] greyscale;
   delete[] block2;
+  delete[] greyscaleMask;
+  delete[] mblock2;
   delete[] gaussian;
   delete[] block3;
+  delete[] gaussianMask;
+  delete[] mblock3;
 
   return 0;
 }
