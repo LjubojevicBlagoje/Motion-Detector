@@ -1,7 +1,5 @@
 #include "classes.h"
 
-#include <stdlib.h>
-
 void Pixel::to_greyscale(uint8_t greyscaleVal) {
   this->r = greyscaleVal;
   this->g = greyscaleVal;

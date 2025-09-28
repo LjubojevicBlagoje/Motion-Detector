@@ -78,6 +78,12 @@ int main(int argc, char** argv) {
     }
   }
 
+   // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
+  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {   //|
+    std::cerr << "Failed to write greyscale.jpg\n";              //|
+  }                                                              //|
+  // --------------------------------------------------------------|
+
   // GAUSSIAN BLUR ---------------------------------------------------------|
   Pixel* block3 = new Pixel[(size_t)w * h];  // contiguous pixels
   Pixel** gaussian = new Pixel*[h];          // row pointers
@@ -88,14 +94,14 @@ int main(int argc, char** argv) {
 
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      double gaussianVal = 0;
+      double sum = 0;
 
       int kernelIndex = 0;
 
       for (int gy = y - 1; gy < y + 2; gy++) {
         for (int gx = x - 1; gx < x + 2; gx++) {
           if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
-            gaussianVal +=
+            sum +=
                 greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
           }
           kernelIndex++;
@@ -103,7 +109,8 @@ int main(int argc, char** argv) {
       }
       // Make R, G, B, and dedicated gaussian value for each pixel in block2
       // equal gaussianVal;
-      gaussian[y][x].to_gaussian(uint8_t(gaussianVal));
+      uint8_t gaussianVal = uint8_t(sum);
+      gaussian[y][x].to_gaussian(gaussianVal);
     }
   }
 
