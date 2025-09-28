@@ -17,6 +17,7 @@
 #pragma clang diagnostic pop
 // GPT5 END ---------------------------------------------------------------|
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -106,9 +107,19 @@ int main(int argc, char** argv) {
   Pixel* block3 = new Pixel[(size_t)w * h];  // contiguous pixels
   Pixel** gaussian = new Pixel*[h];          // row pointers
   for (int y = 0; y < h; ++y) gaussian[y] = block3 + (size_t)y * w;
-  // 3x3 Gaussian kernel
-  double gaussianKernel[9] = {1.0 / 16, 1.0 / 8,  1.0 / 16, 1.0 / 8, 1.0 / 4,
-                              1.0 / 8,  1.0 / 16, 1.0 / 8,  1.0 / 16};
+
+  // Gaussian kernel
+  double gaussianKernel[49] = {
+      0.0 / 1003,  0.0 / 1003,  1.0 / 1003,  2.0 / 1003,  1.0 / 1003,
+      0.0 / 1003,  0.0 / 1003,  0.0 / 1003,  3.0 / 1003,  13.0 / 1003,
+      22.0 / 1003, 13.0 / 1003, 3.0 / 1003,  0.0 / 1003,  1.0 / 1003,
+      13.0 / 1003, 59.0 / 1003, 97.0 / 1003, 59.0 / 1003, 13.0 / 1003,
+      1.0 / 1003,  2.0 / 1003,  22.0 / 1003, 97.0 / 1003, 159.0 / 1003,
+      97.0 / 1003, 22.0 / 1003, 2.0 / 1003,  1.0 / 1003,  13.0 / 1003,
+      59.0 / 1003, 97.0 / 1003, 59.0 / 1003, 13.0 / 1003, 1.0 / 1003,
+      0.0 / 1003,  3.0 / 1003,  13.0 / 1003, 22.0 / 1003, 13.0 / 1003,
+      3.0 / 1003,  0.0 / 1003,  0.0 / 1003,  0.0 / 1003,  1.0 / 1003,
+      2.0 / 1003,  1.0 / 1003,  0.0 / 1003,  0.0 / 1003};
 
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -116,8 +127,8 @@ int main(int argc, char** argv) {
 
       int kernelIndex = 0;
 
-      for (int gy = y - 1; gy < y + 2; gy++) {
-        for (int gx = x - 1; gx < x + 2; gx++) {
+      for (int gy = y - 3; gy < y + 4; gy++) {
+        for (int gx = x - 3; gx < x + 4; gx++) {
           if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
             sum += greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
           }
@@ -126,7 +137,8 @@ int main(int argc, char** argv) {
       }
       // Make R, G, B, and dedicated gaussian value for each pixel in block2
       // equal gaussianVal;
-      uint8_t gaussianVal = uint8_t(sum);
+      uint8_t gaussianVal = static_cast<uint8_t>(std::round(sum));
+
       gaussian[y][x].to_gaussian(gaussian, gaussianVal);
     }
   }
