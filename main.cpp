@@ -1,4 +1,3 @@
-// GPT5 --------------------------------------------------------------------|
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -15,7 +14,6 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #include "stb_image.h"
 #pragma clang diagnostic pop
-// GPT5 END ---------------------------------------------------------------|
 
 #include <cmath>
 #include <cstdint>
@@ -72,50 +70,6 @@ int main(int argc, char** argv) {
   // Apply greyscale to mask
   Pixel** greyscaleMask = applyGreyscale(w, h, n, mask, mblock2);
 
-  // -----------------------------------------------------------------------|
-
-  // TEST EXPORT GREYSCALE AS JPG ---------------------------------|
-  // Allocate raw buffer for tightly packed RGB bytes
-  uint8_t* buffer2 = new uint8_t[(size_t)w * h * 3];
-
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      Pixel& p = greyscale[y][x];  // or gaussian[y][x]
-      size_t idx = ((size_t)y * w + x) * 3;
-      buffer2[idx + 0] = p.r;
-      buffer2[idx + 1] = p.g;
-      buffer2[idx + 2] = p.b;
-    }
-  }
-
-  if (!stbi_write_jpg("greyscaleFRAME.jpg", w, h, 3, buffer2, 90)) {
-    std::cerr << "Failed to write greyscaleFRAME.jpg\n";
-  }
-
-  // Free buffer after writing
-  delete[] buffer2;
-  // ---------------------------------------------------
-  uint8_t* buffer2mask = new uint8_t[(size_t)w * h * 3];
-
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      Pixel& p = greyscaleMask[y][x];  // or gaussian[y][x]
-      size_t idx = ((size_t)y * w + x) * 3;
-      buffer2mask[idx + 0] = p.r;
-      buffer2mask[idx + 1] = p.g;
-      buffer2mask[idx + 2] = p.b;
-    }
-  }
-
-  if (!stbi_write_jpg("greyscaleMASK.jpg", w, h, 3, buffer2mask, 90)) {
-    std::cerr << "Failed to write greyscaleMASK.jpg\n";
-  }
-
-  // Free buffer after writing
-  delete[] buffer2mask;
-
-  // --------------------------------------------------------------|
-
   // GAUSSIAN BLUR ---------------------------------------------------------|
   Pixel* block3 = new Pixel[(size_t)w * h];  // contiguous pixels
   Pixel* mblock3 = new Pixel[(size_t)w * h];
@@ -126,50 +80,6 @@ int main(int argc, char** argv) {
   Pixel** gaussianMask = applyGaussianBlur(w, h, n, greyscaleMask, mblock3);
 
   // -----------------------------------------------------------------------|
-
-  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
-  // Allocate raw buffer for tightly packed RGB bytes
-  uint8_t* buffer3 = new uint8_t[(size_t)w * h * 3];
-
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      Pixel& p = gaussian[y][x];  // or gaussian[y][x]
-      size_t idx = ((size_t)y * w + x) * 3;
-      buffer3[idx + 0] = p.r;
-      buffer3[idx + 1] = p.g;
-      buffer3[idx + 2] = p.b;
-    }
-  }
-
-  if (!stbi_write_jpg("gaussianFRAME.jpg", w, h, 3, buffer3, 90)) {
-    std::cerr << "Failed to write gaussianFRAME.jpg\n";
-  }
-
-  // Free buffer after writing
-  delete[] buffer3;
-  // -----------------------------------------------------------------------|
-
-  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
-  // Allocate raw buffer for tightly packed RGB bytes
-  uint8_t* buffer3mask = new uint8_t[(size_t)w * h * 3];
-
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      Pixel& p = gaussianMask[y][x];  // or gaussian[y][x]
-      size_t idx = ((size_t)y * w + x) * 3;
-      buffer3mask[idx + 0] = p.r;
-      buffer3mask[idx + 1] = p.g;
-      buffer3mask[idx + 2] = p.b;
-    }
-  }
-
-  if (!stbi_write_jpg("gaussianMASK.jpg", w, h, 3, buffer3mask, 90)) {
-    std::cerr << "Failed to write gaussianMASK.jpg\n";
-  }
-
-  // Free buffer after writing
-  delete[] buffer3mask;
-  // --------------------------------------------------------------|
 
   delete[] img;
   delete[] block;
