@@ -10,7 +10,6 @@ class Pixel {
   uint8_t g;
   uint8_t b;
   uint8_t greyscale;
-  uint8_t gaussian;
 
   // Assign the greyscale value to R, G, and B
   void to_greyscale(Pixel** greyscale, uint8_t greyscaleVal);

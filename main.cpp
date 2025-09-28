@@ -79,7 +79,29 @@ int main(int argc, char** argv) {
   // Apply gaussian blur to mask
   Pixel** gaussianMask = applyGaussianBlur(w, h, n, greyscaleMask, mblock3);
 
-  // -----------------------------------------------------------------------|
+  // COMPUTE ABSDIFF--------------------------------------------------------|
+  uint64_t absDiff = 0;
+
+  // Calculate absolute difference between the frame and mask
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      absDiff += abs(int(gaussian[y][x].greyscale) -
+                     int(gaussianMask[y][x].greyscale));
+    }
+  }
+
+  // Compute difference % (frame vs mask)
+  float score = absDiff / (255.0 * (h * w));
+
+  if (score > 0.02) {
+    std::cout<<"MOTION DETECTED"<<std::endl;
+  } else {
+    std::cout<<"---------------"<<std::endl;
+  }
+
+  std::cout << "Difference: " << int(score * 100) << "%\n(" << score << ")"
+            << std::endl;
+
 
   delete[] img;
   delete[] block;

@@ -11,5 +11,5 @@ void Pixel::to_gaussian(Pixel** gaussian, uint8_t gaussianVal){
   this->r = gaussianVal;
   this->g = gaussianVal;
   this->b = gaussianVal;
-  this->gaussian = gaussianVal;
+  this->greyscale = gaussianVal;
 }
