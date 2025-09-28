@@ -13,10 +13,10 @@ class Pixel {
   uint8_t gaussian;
 
   // Assign the greyscale value to R, G, and B
-  void to_greyscale(uint8_t greyscaleVal);
+  void to_greyscale(Pixel** greyscale, uint8_t greyscaleVal);
 
   // Apply gaussian blur to the pixel (update greyscale value)
-  void to_gaussian(uint8_t gaussianVal);
+  void to_gaussian(Pixel** gaussian, uint8_t gaussianVal);
 };
 
 #endif

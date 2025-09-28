@@ -74,14 +74,32 @@ int main(int argc, char** argv) {
 
       // Make R, G, B, and dedicated greyscale value for each pixel in block2
       // equal greyscaleVal
-      greyscale[y][x].to_greyscale(greyscaleVal);
+      greyscale[y][x].to_greyscale(greyscale, greyscaleVal);
+    }
+  }
+  // -----------------------------------------------------------------------|
+
+  // TEST EXPORT GREYSCALE AS JPG ---------------------------------|
+  // Allocate raw buffer for tightly packed RGB bytes
+  uint8_t* buffer2 = new uint8_t[(size_t)w * h * 3];
+
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      Pixel& p = greyscale[y][x];  // or gaussian[y][x]
+      size_t idx = ((size_t)y * w + x) * 3;
+      buffer2[idx + 0] = p.r;
+      buffer2[idx + 1] = p.g;
+      buffer2[idx + 2] = p.b;
     }
   }
 
-   // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
-  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {   //|
-    std::cerr << "Failed to write greyscale.jpg\n";              //|
-  }                                                              //|
+  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, buffer2, 90)) {
+    std::cerr << "Failed to write greyscale.jpg\n";
+  }
+
+  // Free buffer after writing
+  delete[] buffer2;
+
   // --------------------------------------------------------------|
 
   // GAUSSIAN BLUR ---------------------------------------------------------|
@@ -101,8 +119,7 @@ int main(int argc, char** argv) {
       for (int gy = y - 1; gy < y + 2; gy++) {
         for (int gx = x - 1; gx < x + 2; gx++) {
           if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
-            sum +=
-                greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
+            sum += greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
           }
           kernelIndex++;
         }
@@ -110,21 +127,40 @@ int main(int argc, char** argv) {
       // Make R, G, B, and dedicated gaussian value for each pixel in block2
       // equal gaussianVal;
       uint8_t gaussianVal = uint8_t(sum);
-      gaussian[y][x].to_gaussian(gaussianVal);
+      gaussian[y][x].to_gaussian(gaussian, gaussianVal);
+    }
+  }
+  // -----------------------------------------------------------------------|
+
+  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
+  // Allocate raw buffer for tightly packed RGB bytes
+  uint8_t* buffer3 = new uint8_t[(size_t)w * h * 3];
+
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      Pixel& p = gaussian[y][x];  // or gaussian[y][x]
+      size_t idx = ((size_t)y * w + x) * 3;
+      buffer3[idx + 0] = p.r;
+      buffer3[idx + 1] = p.g;
+      buffer3[idx + 2] = p.b;
     }
   }
 
-  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
-  if (!stbi_write_jpg("gaussian.jpg", w, h, 3, block3, 90)) {   //|
-    std::cerr << "Failed to write gaussian.jpg\n";              //|
-  }                                                             //|
-  // -------------------------------------------------------------|
+  if (!stbi_write_jpg("gaussian.jpg", w, h, 3, buffer3, 90)) {
+    std::cerr << "Failed to write gaussian.jpg\n";
+  }
 
+  // Free buffer after writing
+  delete[] buffer3;
+
+  // --------------------------------------------------------------|
 
   delete[] img;
   delete[] block;
   delete[] greyscale;
   delete[] block2;
+  delete[] gaussian;
+  delete[] block3;
 
   return 0;
 }
