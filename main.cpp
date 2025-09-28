@@ -23,8 +23,8 @@
 #include <iostream>
 #include <new>
 
-#include "classes.cpp"
 #include "classes.h"
+#include "functions.h"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -45,19 +45,16 @@ int main(int argc, char** argv) {
   std::cout << "Loaded " << w << "x" << h << "RGB" << std::endl;
 
   Pixel* block = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** img = new Pixel*[w];              // column pointers
-
-  for (int x = 0; x < w; ++x) {
-    img[x] = block + (size_t)x * h;  // each column is h tall
-  }
+  Pixel** img = new Pixel*[h];              // row pointers
+  for (int y = 0; y < h; ++y) img[y] = block + (size_t)y * w;
 
   // fill from stb_image's RGB bytes
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
       size_t l = ((size_t)y * w + x) * 3;  // byte index into data
-      img[x][y].r = data[l + 0];
-      img[x][y].g = data[l + 1];
-      img[x][y].b = data[l + 2];
+      img[y][x].r = data[l + 0];
+      img[y][x].g = data[l + 1];
+      img[y][x].b = data[l + 2];
     }
   }
 
@@ -66,37 +63,56 @@ int main(int argc, char** argv) {
 
   // GPT5 END ---------------------------------------------------------------|
 
-  // CONVERT TO GREYSCALE
+  // CONVERT TO GREYSCALE ---------------------------------------------------|
   Pixel* block2 = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** greyscale = new Pixel*[w];         // column pointers
-  for (int x = 0; x < w; ++x) {
-    greyscale[x] = block2 + (size_t)x * h;  // each column has h pixels
-  }
+  Pixel** greyscale = new Pixel*[h];         // row pointers
+  for (int y = 0; y < h; ++y) greyscale[y] = block2 + (size_t)y * w;
 
-  // compute greyscale from img[x][y]
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
-      uint8_t greyscaleVal =
-          (uint8_t)(((int)img[x][y].r + img[x][y].g + img[x][y].b) / 3);
+      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b) / 3;
 
-      // Make R, G, and B value for each pixel equal greyscaleVal
-      greyscale[y][x].to_greyscale(greyscale, greyscaleVal);
+      // Make R, G, B, and dedicated greyscale value for each pixel in block2
+      // equal greyscaleVal
+      greyscale[y][x].to_greyscale(greyscaleVal);
     }
   }
 
-  // TEST EXPORT GREYSCALE AS JPG ----------------------------------
-  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {  //|
-    std::cerr << "Failed to write greyscale.jpg\n";             //|
-  }  //|
-  // ---------------------------------------------------------------
+  // GAUSSIAN BLUR ---------------------------------------------------------|
+  Pixel* block3 = new Pixel[(size_t)w * h];  // contiguous pixels
+  Pixel** gaussian = new Pixel*[h];          // row pointers
+  for (int y = 0; y < h; ++y) gaussian[y] = block3 + (size_t)y * w;
+  // 3x3 Gaussian kernel
+  double gaussianKernel[9] = {1.0 / 16, 1.0 / 8,  1.0 / 16, 1.0 / 8, 1.0 / 4,
+                              1.0 / 8,  1.0 / 16, 1.0 / 8,  1.0 / 16};
 
-  // GAUSSIAN BLUR 
-  // 5x5 Gaussian kernel
-  int gaussianKernel[5][5] = {{1, 4, 7, 4, 1},
-                              {4, 16, 26, 16, 4},
-                              {7, 26, 41, 26, 7},
-                              {4, 16, 26, 16, 4},
-                              {1, 4, 7, 4, 1}};
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      double gaussianVal = 0;
+
+      int kernelIndex = 0;
+
+      for (int gy = y - 1; gy < y + 2; gy++) {
+        for (int gx = x - 1; gx < x + 2; gx++) {
+          if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
+            gaussianVal +=
+                greyscale[gy][gx].greyscale * gaussianKernel[kernelIndex];
+          }
+          kernelIndex++;
+        }
+      }
+      // Make R, G, B, and dedicated gaussian value for each pixel in block2
+      // equal gaussianVal;
+      gaussian[y][x].to_gaussian(uint8_t(gaussianVal));
+    }
+  }
+
+  // TEST EXPORT GAUSSIAN AS JPG ---------------------------------|
+  if (!stbi_write_jpg("gaussian.jpg", w, h, 3, block3, 90)) {   //|
+    std::cerr << "Failed to write gaussian.jpg\n";              //|
+  }                                                             //|
+  // -------------------------------------------------------------|
+
 
   delete[] img;
   delete[] block;
