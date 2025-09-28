@@ -2,6 +2,12 @@
 #include "classes.h"
 
 #include <cmath>
+#include <iostream>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 const double* getKernel() {
   static double kernel[81] = {
@@ -89,4 +95,25 @@ Pixel** applyGaussianBlur(int w, int h, int n, Pixel** greyscale, Pixel* block3)
     }
   }
   return gaussian;
+}
+
+// Fetch time
+std::string now_string() {
+    using namespace std::chrono;
+    const auto now = system_clock::now();
+    const auto tt  = system_clock::to_time_t(now);
+
+    std::tm local{};
+    #ifdef _WIN32
+      localtime_s(&local, &tt);
+    #else
+      localtime_r(&tt, &local);
+    #endif
+
+    const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+
+    std::ostringstream oss;
+    oss << std::put_time(&local, "%Y-%m-%d %H:%M:%S")
+        << '.' << std::setw(3) << std::setfill('0') << ms.count();
+    return oss.str();
 }

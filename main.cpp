@@ -21,6 +21,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+
 
 #include "classes.h"
 #include "functions.h"
@@ -81,27 +85,41 @@ int main(int argc, char** argv) {
 
   // COMPUTE ABSDIFF--------------------------------------------------------|
   uint64_t absDiff = 0;
+  uint64_t pixelsChanged = 0;
+  const double totalPixels = double(w) * double(h);
+
+  int motionThreshold = 24;
 
   // Calculate absolute difference between the frame and mask
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      absDiff += abs(int(gaussian[y][x].greyscale) -
-                     int(gaussianMask[y][x].greyscale));
+      int localAbsDiff = abs(int(gaussian[y][x].greyscale) -
+                             int(gaussianMask[y][x].greyscale));
+
+      absDiff += localAbsDiff;  // Add to global absdiff
+
+      // If the difference between greyscale values of the 2 pixels
+      // is big enough, register that pixel as changed.
+      if (localAbsDiff >= motionThreshold) {
+        pixelsChanged++;
+      }
     }
   }
 
   // Compute difference % (frame vs mask)
-  float score = absDiff / (255.0 * (h * w));
+  const double score = absDiff / (255.0 * totalPixels);
+  const double percentChanged = double(pixelsChanged) / totalPixels;
 
-  if (score > 0.02) {
-    std::cout<<"MOTION DETECTED"<<std::endl;
+  if (score > 0.02 || percentChanged > 0.01) {
+    std::cout << "\n----------------\nMOTION DETECTED!\n"<< now_string() <<"\n"<< std::endl;
   } else {
-    std::cout<<"---------------"<<std::endl;
+    std::cout << "\n----------------" << std::endl;
   }
 
-  std::cout << "Difference: " << int(score * 100) << "%\n(" << score << ")"
+  std::cout << "absdiff: " << int(score * 100) << "%\n(" << score << ")\n"
+            << "percentage of pixels changed: " << int(percentChanged * 100)
+            << "%\n(" << percentChanged << ")" << "\n----------------"
             << std::endl;
-
 
   delete[] img;
   delete[] block;
