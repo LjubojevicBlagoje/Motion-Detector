@@ -1,4 +1,4 @@
- // GPT5 --------------------------------------------------------------------|
+// GPT5 --------------------------------------------------------------------|
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -23,8 +23,8 @@
 #include <iostream>
 #include <new>
 
-#include "classes.h"
 #include "classes.cpp"
+#include "classes.h"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -45,16 +45,19 @@ int main(int argc, char** argv) {
   std::cout << "Loaded " << w << "x" << h << "RGB" << std::endl;
 
   Pixel* block = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** img = new Pixel*[h];              // row pointers
-  for (int y = 0; y < h; ++y) img[y] = block + (size_t)y * w;
+  Pixel** img = new Pixel*[w];              // column pointers
+
+  for (int x = 0; x < w; ++x) {
+    img[x] = block + (size_t)x * h;  // each column is h tall
+  }
 
   // fill from stb_image's RGB bytes
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
       size_t l = ((size_t)y * w + x) * 3;  // byte index into data
-      img[y][x].r = data[l + 0];
-      img[y][x].g = data[l + 1];
-      img[y][x].b = data[l + 2];
+      img[x][y].r = data[l + 0];
+      img[x][y].g = data[l + 1];
+      img[x][y].b = data[l + 2];
     }
   }
 
@@ -65,12 +68,16 @@ int main(int argc, char** argv) {
 
   // CONVERT TO GREYSCALE
   Pixel* block2 = new Pixel[(size_t)w * h];  // contiguous pixels
-  Pixel** greyscale = new Pixel*[h];         // row pointers
-  for (int y = 0; y < h; ++y) greyscale[y] = block2 + (size_t)y * w;
+  Pixel** greyscale = new Pixel*[w];         // column pointers
+  for (int x = 0; x < w; ++x) {
+    greyscale[x] = block2 + (size_t)x * h;  // each column has h pixels
+  }
 
+  // compute greyscale from img[x][y]
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
-      uint8_t greyscaleVal = (img[y][x].r + img[y][x].g + img[y][x].b) / 3;
+      uint8_t greyscaleVal =
+          (uint8_t)(((int)img[x][y].r + img[x][y].g + img[x][y].b) / 3);
 
       // Make R, G, and B value for each pixel equal greyscaleVal
       greyscale[y][x].to_greyscale(greyscale, greyscaleVal);
@@ -78,14 +85,18 @@ int main(int argc, char** argv) {
   }
 
   // TEST EXPORT GREYSCALE AS JPG ----------------------------------
-  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {   //|
-    std::cerr << "Failed to write greyscale.jpg\n";              //|
-  }                                                              //|
+  if (!stbi_write_jpg("greyscale.jpg", w, h, 3, block2, 90)) {  //|
+    std::cerr << "Failed to write greyscale.jpg\n";             //|
+  }  //|
   // ---------------------------------------------------------------
 
-  // TODO: Apply Gaussian blur
-
-  // Export preprocessed img as a jpg
+  // GAUSSIAN BLUR 
+  // 5x5 Gaussian kernel
+  int gaussianKernel[5][5] = {{1, 4, 7, 4, 1},
+                              {4, 16, 26, 16, 4},
+                              {7, 26, 41, 26, 7},
+                              {4, 16, 26, 16, 4},
+                              {1, 4, 7, 4, 1}};
 
   delete[] img;
   delete[] block;

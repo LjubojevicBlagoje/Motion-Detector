@@ -6,3 +6,4 @@ void Pixel::to_greyscale(Pixel** greyscale, uint8_t greyscaleVal) {
   this->g = greyscaleVal;
   this->b = greyscaleVal;
 }
+
