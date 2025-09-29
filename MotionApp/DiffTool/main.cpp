@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     }
   }
 
-
+  // Compute difference % (frame vs mask)
   const double score = absDiff / (255.0 * totalPixels);
   const double percentChanged = double(pixelsChanged) / totalPixels;
 
